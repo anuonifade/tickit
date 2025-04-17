@@ -3,4 +3,4 @@
 	url = ./tickit-api
 [submodule "tickit-app/frontend"]
 	path = tickit-app/frontend
-	url = ./tickit-frontend
+	url = https://github.com/anuonifade/tickit-frontend.git
