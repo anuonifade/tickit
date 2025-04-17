@@ -1,6 +1,6 @@
 [submodule "tickit-api"]
 	path = tickit-api
-	url = ./tickit-api
+	url = https://github.com/anuonifade/tickit-api.git
 [submodule "tickit-app/frontend"]
 	path = tickit-app/frontend
 	url = https://github.com/anuonifade/tickit-frontend.git
