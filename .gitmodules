@@ -1,0 +1,3 @@
+[submodule "tickit-api"]
+	path = tickit-api
+	url = ./tickit-api
