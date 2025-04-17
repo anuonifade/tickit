@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react-frontend
+  namespace: tickit-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: react-frontend
+  template:
+    metadata:
+      labels:
+        app: react-frontend
+    spec:
+      containers:
+        - name: react-frontend
+          image: anuonifade/tickit-frontend:latest
+          env:
+            - name: REACT_APP_API_URL
+              value: "http://localhost:3000/api/v1"
+          ports:
+            - containerPort: 3000

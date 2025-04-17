@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  db:
+    image: postgres:14-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-tickit_production}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # Rails API backend
+  api:
+    build:
+      context: ./tickit-api
+      dockerfile: Dockerfile
+    command: bundle exec rails server -b 0.0.0.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-tickit_development}
+      RAILS_ENV: ${RAILS_ENV:-development}
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:-dummy_master_key_for_dev}
+      LOCKBOX_MASTER_KEY: ${LOCKBOX_MASTER_KEY:-abcdefghijklmnopqrstuvwxyz123456}
+      BLIND_INDEX_MASTER_KEY: ${BLIND_INDEX_MASTER_KEY:-0123456789abcdef0123456789abcdef}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-$(openssl rand -hex 64)}
+      RAILS_SERVE_STATIC_FILES: 'true'
+      RAILS_LOG_TO_STDOUT: 'true'
+      # Active Record encryption keys for HIPAA compliance
+      ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: 'fGCt5vPdufbz49rZ4HYlrALQNlttRwB9'
+      ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: 'nmKDKqLxqBydvQ8jv8kXepkZHUtb4vlA'
+      ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: 'fmGMKkLk1fUenaZw6T4JC3zlW1S45N8n'
+    volumes:
+      # Don't mount the app directory in development to avoid file permission issues
+      # - ./tickit-api:/app
+      # Removed api_gems volume mount as gems are baked into the image
+      # - api_gems:/usr/local/bundle 
+      - api_tmp:/app/tmp
+      - api_log:/app/log
+    ports:
+      - "3000:3000"
+    networks:
+      - frontend
+      - backend
+    restart: unless-stopped
+
+  # React frontend
+  frontend:
+    build:
+      context: ./tickit-app/frontend
+      dockerfile: Dockerfile
+      target: ${FRONTEND_TARGET:-development}
+    depends_on:
+      - api
+    ports:
+      - "${FRONTEND_PORT:-8080}:${FRONTEND_INTERNAL_PORT:-8080}"
+    environment:
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:3000/api/v1}
+      - NODE_ENV=${NODE_ENV:-development}
+    volumes:
+      - ./tickit-app/frontend:/app
+      - frontend_node_modules:/app/node_modules
+    networks:
+      - frontend
+    restart: unless-stopped
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  api_gems:
+  api_tmp:
+  api_log:
+  frontend_node_modules:

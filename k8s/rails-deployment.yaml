@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rails-api
+  namespace: tickit-prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: rails-api
+  template:
+    metadata:
+      labels:
+        app: rails-api
+    spec:
+      containers:
+        - name: rails-api
+          image: anuonifade/tickit-api:latest
+          command: ["/bin/sh","-c"]
+          args:
+            - |
+              mkdir -p tmp/pids
+              until nc -z postgres 5432; do
+                echo "Waiting for PostgreSQL..."
+                sleep 1
+              done
+              echo "Starting Rails server..."
+              RAILS_LOG_TO_STDOUT=true bundle exec rails server -b 0.0.0.0 -p 3000 -e production
+          env:
+            - name: RAILS_ENV
+              value: production
+            - name: CORS_ORIGINS
+              value: "*,http://localhost:8080,http://127.0.0.1:8080"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: POSTGRES_DB
+            - name: RAILS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: RAILS_MASTER_KEY
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: SECRET_KEY_BASE
+            - name: LOCKBOX_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: LOCKBOX_MASTER_KEY
+            - name: BLIND_INDEX_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: BLIND_INDEX_MASTER_KEY
+            - name: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY
+            - name: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY
+            - name: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: tickit-secrets
+                  key: ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT
+          ports:
+            - containerPort: 3000
