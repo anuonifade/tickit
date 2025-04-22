@@ -31,6 +31,10 @@ spec:
               value: production
             - name: CORS_ORIGINS
               value: "*,http://localhost:8080,http://127.0.0.1:8080"
+            - name: ENABLE_AUDIT_LOGS
+              value: "true"
+            - name: DEVISE_STRETCHES
+              value: "12"
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
