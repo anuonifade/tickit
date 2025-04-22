@@ -159,8 +159,10 @@ A secure, HIPAA-compliant mental health survey application built with Ruby on Ra
 - No personally identifiable information is stored
 - All data transmission is secured through our Docker setup with Nginx
 - Network segregation in Docker (frontend and backend networks) for added security
-- Comprehensive audit logging
+- Comprehensive audit logging through the `AuditService`
 - Strict access controls
+- Environment-based configuration instead of environment checks
+- Clean separation of application and test code
 
 ### Docker Security Measures
 
@@ -179,6 +181,23 @@ A secure, HIPAA-compliant mental health survey application built with Ruby on Ra
 cd tickit-api
 bundle exec rspec
 ```
+
+#### Test Environment Configuration
+The application uses environment variables instead of `Rails.env.test?` checks to configure the test environment:
+
+- `LOCKBOX_MASTER_KEY` and `BLIND_INDEX_MASTER_KEY`: Set encryption keys for tests
+- `SKIP_DB_INDEXES`: Skip database indexes in test environment
+- `DEVISE_STRETCHES`: Configure password hashing complexity
+- `ENABLE_AUDIT_LOGS`: Enable audit logging in tests
+
+These environment variables are automatically set in the test environment through the `TestEnvironmentHelper` module.
+
+#### Mocking Encryption in Tests
+Tests use proper mocks and stubs for encryption-related functionality:
+
+- Instance doubles are used to avoid database interactions
+- Encryption keys are set using environment variables
+- The `AuditService` handles audit logging without relying on thread-local variables
 
 ### Frontend Tests
 ```
